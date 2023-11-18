@@ -143,6 +143,11 @@ namespace GlazeWM.Domain.Windows
       return (GetWindowStyles(handle) & style) != 0;
     }
 
+    public static IntPtr GetHandleParent(IntPtr handle)
+    {
+      return GetParent(handle);
+    }
+
     public static bool HandleHasWindowExStyle(IntPtr handle, WindowStylesEx style)
     {
       return (GetWindowStylesEx(handle) & style) != 0;
@@ -183,6 +188,12 @@ namespace GlazeWM.Domain.Windows
         // TODO: Temporary fix for managing Flow Launcher until a force manage command is added.
         if (processName == "Flow.Launcher" && title == "Flow.Launcher")
           return true;
+
+        if (processName == "vcxsrv" && title == "VcXsrv X")
+        {
+          System.Threading.Thread.Sleep(30);
+          return true;
+        }
       }
 
       // Ignore windows that are hidden.
@@ -191,8 +202,12 @@ namespace GlazeWM.Domain.Windows
 
       // Ensure window is top-level (ie. not a child window). Ignore windows that cannot be focused
       // or if they're unavailable in task switcher (alt+tab menu).
-      var isApplicationWindow = !HandleHasWindowStyle(handle, WindowStyles.Child)
-        && !HandleHasWindowExStyle(handle, WindowStylesEx.NoActivate | WindowStylesEx.ToolWindow);
+
+      var isChild = HandleHasWindowStyle(handle, WindowStyles.Child);
+      var isNoActivate = HandleHasWindowExStyle(handle, WindowStylesEx.NoActivate);
+      var isTool = HandleHasWindowExStyle(handle, WindowStylesEx.ToolWindow);
+
+      var isApplicationWindow = !isChild && !(isNoActivate || isTool);
 
       if (!isApplicationWindow)
         return false;
